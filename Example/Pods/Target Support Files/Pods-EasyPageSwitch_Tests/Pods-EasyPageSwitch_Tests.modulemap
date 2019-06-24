@@ -1,0 +1,6 @@
+framework module Pods_EasyPageSwitch_Tests {
+  umbrella header "Pods-EasyPageSwitch_Tests-umbrella.h"
+
+  export *
+  module * { export * }
+}

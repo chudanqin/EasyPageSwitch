@@ -1,0 +1,16 @@
+PODS:
+  - EasyPageSwitch (0.1.0)
+
+DEPENDENCIES:
+  - EasyPageSwitch (from `../`)
+
+EXTERNAL SOURCES:
+  EasyPageSwitch:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  EasyPageSwitch: 1b5658a4bbf45e1d72d4470cee56a26193669543
+
+PODFILE CHECKSUM: fc7e3368ad8e4af5d0a02bcd3c2c9b1c9839a4dc
+
+COCOAPODS: 1.7.0
