@@ -18,11 +18,20 @@ class ViewController: UIViewController {
     @IBAction func presnt(_ sender: Any) {
         let vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "Test")
 //        self.view.window?.eps.slideIn(vc)
+        EasyPageSwitch.defaultNavigationBackButtonClosure = { vc in
+            return UIBarButtonItem(title: "youmeiyou", style: .plain, target: vc, action: #selector(UIViewController.eps_navigationBackButtonClicked(sender:)))
+        }
         let t = SlidePageTransition()
-        t.presentAnimation.direction = .down
-        t.dismissAnimation.direction = .up
-        EasyPageSwitch.current.show(vc, transition: t)
+        t.presentAnimation.direction = .left
+        t.dismissAnimation.direction = .right
+        t.interactionType = .panPage
+        //EasyPageSwitch.current.show(vc, options: [.withNavigationBar, .withNavigationBackButton], transition: t)
+        EasyPageSwitch.current.slideIn(vc)
     }
+    
+//    override public func eps_navigationBackButton() -> UIBarButtonItem? {
+//
+//    }
     
     
     @IBAction func dismiss(_ sender: Any) {

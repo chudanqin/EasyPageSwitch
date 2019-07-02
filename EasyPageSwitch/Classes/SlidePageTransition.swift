@@ -7,7 +7,21 @@
 
 import Foundation
 
-public class SlidePageTransition: UIPercentDrivenInteractiveTransition, EasyPageSwitchable {
+public class SlidePageTransition: UIPercentDrivenInteractiveTransition, EasyPageTransition {
+    
+    public enum SlideDirection {
+        case null
+        case up
+        case left
+        case down
+        case right
+    }
+    
+    public enum InteractionType {
+        case null
+        case panEdge
+        case panPage
+    }
     
     public let presentAnimation = SlideInAnimation()
     
@@ -16,6 +30,11 @@ public class SlidePageTransition: UIPercentDrivenInteractiveTransition, EasyPage
     private var interacting = false
     
     private var interactionComplete = false
+    
+    public var interactionType: InteractionType = .panEdge
+    
+    public var interactionDirection: SlideDirection?
+    
     
     public func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
         return presentAnimation
@@ -26,6 +45,9 @@ public class SlidePageTransition: UIPercentDrivenInteractiveTransition, EasyPage
     }
     
     public func interactionControllerForDismissal(using animator: UIViewControllerAnimatedTransitioning) -> UIViewControllerInteractiveTransitioning? {
+        if interactionType == .null {
+            return nil
+        }
         return interacting ? self : nil
     }
 }
@@ -33,19 +55,12 @@ public class SlidePageTransition: UIPercentDrivenInteractiveTransition, EasyPage
 
 // MARK: - Slide-in Animation And Slide-out Animation
 extension SlidePageTransition {
-    public enum SlideDirection {
-        case none
-        case up
-        case left
-        case down
-        case right
-    }
     
     public class SlideAnimation: NSObject, UIViewControllerAnimatedTransitioning {
         
         static fileprivate let shadowViewTag = 10241024
         
-        public var direction: SlideDirection = .none
+        public var direction: SlideDirection = .null
         
         public var duration = 0.3
         
@@ -175,9 +190,35 @@ extension SlidePageTransition {
 
 // MARK: - Pan Guesture
 extension SlidePageTransition {
+    private func _interactionDirection() -> SlideDirection {
+        return interactionDirection ?? dismissAnimation.direction
+    }
+    
     public func didFinishPresenting(_ viewController: UIViewController) {
-        let gesture = UIPanGestureRecognizer(target: self, action: #selector(handleGesture(_:)))
-        viewController.view.addGestureRecognizer(gesture)
+        switch interactionType {
+        case .panEdge:
+            let gesture = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handleGesture(_:)))
+            let direction = _interactionDirection()
+            switch direction {
+            case .null:
+                // not work?
+                gesture.edges = .all
+            case .up:
+                gesture.edges = .bottom
+            case .left:
+                gesture.edges = .right
+            case .down:
+                gesture.edges = .top
+            case .right:
+                gesture.edges = .left
+            }
+            viewController.view.addGestureRecognizer(gesture)
+        case .panPage:
+            let gesture = UIPanGestureRecognizer(target: self, action: #selector(handleGesture(_:)))
+            viewController.view.addGestureRecognizer(gesture)
+        default:
+            break
+        }
     }
     
     override open var completionSpeed: CGFloat {
@@ -193,24 +234,26 @@ extension SlidePageTransition {
         switch gr.state {
         case .began:
             interacting = true
-            gr.view?.hostViewController()?.dismiss(animated: true, completion: nil)
+            EasyPageSwitch.hostViewController(for: gr.view)?.dismiss(animated: true, completion: nil)
         case .changed:
             if let view = gr.view {
                 var percent: CGFloat = 0.0
                 let translation = gr.translation(in: view.superview)
-                switch dismissAnimation.direction {
+                switch self._interactionDirection() {
                 case .up:
                     percent = -translation.y / view.bounds.size.height
-                case .left:
-                    percent = -translation.x / view.bounds.size.width
                 case .down:
                     percent = translation.y / view.bounds.size.height
+                case .left:
+                    percent = -translation.x / view.bounds.size.width
                 case .right:
                     percent = translation.x / view.bounds.size.width
                 default:
                     percent = 1.0
                 }
-                
+                if (interactionType == .panEdge) {
+                    percent = abs(percent)
+                }
                 percent = max(percent, 0.0)
                 percent = min(percent, 1.0)
                 interactionComplete = percent > 0.5
